@@ -53,6 +53,7 @@ type InitializeResult struct {
 type ServerCapability struct {
 	Resources ResourcesCapability `json:"resources"`
 	Tools     ToolsCapability     `json:"tools"`
+	Prompts   PromptsCapability   `json:"prompts,omitempty"`
 }
 
 type ResourcesCapability struct {
@@ -62,6 +63,10 @@ type ResourcesCapability struct {
 
 type ToolsCapability struct {
 	Subscribe   bool `json:"subscribe"`
+	ListChanged bool `json:"listChanged"`
+}
+
+type PromptsCapability struct {
 	ListChanged bool `json:"listChanged"`
 }
 
@@ -131,6 +136,48 @@ type ToolResultContent struct {
 	Text     string          `json:"text,omitempty"`
 	Data     json.RawMessage `json:"data,omitempty"`
 	MimeType string          `json:"mimeType,omitempty"`
+}
+
+// Prompts
+type ListPromptsResult struct {
+	Prompts []Prompt `json:"prompts"`
+}
+
+type Prompt struct {
+	Name        string            `json:"name"`
+	Description string            `json:"description,omitempty"`
+	Arguments   []PromptArgument  `json:"arguments,omitempty"`
+}
+
+type PromptArgument struct {
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Required    bool   `json:"required,omitempty"`
+}
+
+type GetPromptParams struct {
+	Name      string                 `json:"name"`
+	Arguments map[string]interface{} `json:"arguments,omitempty"`
+}
+
+type GetPromptResult struct {
+	Messages []PromptMessage `json:"messages"`
+}
+
+type PromptMessage struct {
+	Role    string          `json:"role"`
+	Content PromptContent   `json:"content"`
+}
+
+type PromptContent struct {
+	Type     string          `json:"type"`
+	Text     string          `json:"text,omitempty"`
+	Resource *PromptResource `json:"resource,omitempty"`
+}
+
+type PromptResource struct {
+	URI  string `json:"uri"`
+	Text string `json:"text,omitempty"`
 }
 
 // Error codes

@@ -13,6 +13,7 @@ import (
 
 	// gomcp "github.com/modelcontextprotocol/go-sdk/mcp"
 
+	"github.com/hirosato/go-mcp-scaffoldings/backend/internal/api/mcp/prompts"
 	"github.com/hirosato/go-mcp-scaffoldings/backend/internal/api/mcp/resources"
 	"github.com/hirosato/go-mcp-scaffoldings/backend/internal/api/mcp/tools"
 	"github.com/hirosato/go-mcp-scaffoldings/backend/internal/api/response"
@@ -204,6 +205,14 @@ func main() {
 
 	// Register journal entry resources
 	registry.RegisterResource(resources.NewJournalEntriesResource(journalService))
+
+	// Register prompts
+	registry.RegisterPrompt(&prompts.SimplePrompt{
+		Name:        "greeting",
+		Description: "A simple greeting prompt",
+	})
+	registry.RegisterPrompt(&prompts.AnalyzeFinancialReportPrompt{})
+	registry.RegisterPrompt(&prompts.CreateBudgetPrompt{})
 
 	// Create MCP service with registry
 	mcpService := mcp.NewService(logger, registry)

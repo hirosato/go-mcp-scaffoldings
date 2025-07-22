@@ -85,6 +85,10 @@ func (s *Service) HandleRequest(ctx context.Context, request JSONRPCRequest) HTT
 		return s.handleListTools(ctx, request)
 	case "tools/call":
 		return s.handleCallTool(ctx, request)
+	case "prompts/list":
+		return s.handleListPrompts(ctx, request)
+	case "prompts/get":
+		return s.handleGetPrompt(ctx, request)
 	default:
 		return NewErrorHTTPResponse(request.ID, MethodNotFound, fmt.Sprintf("Method not found: %s", request.Method), nil, http.StatusOK)
 	}
@@ -106,6 +110,9 @@ func (s *Service) handleInitialize(ctx context.Context, request JSONRPCRequest) 
 			Tools: ToolsCapability{
 				ListChanged: true,
 				Subscribe:   false,
+			},
+			Prompts: PromptsCapability{
+				ListChanged: true,
 			},
 		},
 		Instructions: "Use this MCP server to Double-entry bookkeeping",
@@ -196,14 +203,31 @@ func (s *Service) handleCallTool(ctx context.Context, request JSONRPCRequest) HT
 }
 
 
-func (s *Service) errorResponse(id json.RawMessage, code int, message string, data interface{}) JSONRPCResponse {
-	return JSONRPCResponse{
-		JSONRPC: jsonRPCVersion,
-		ID:      id,
-		Error: &JSONRPCError{
-			Code:    code,
-			Message: message,
-			Data:    data,
-		},
+func (s *Service) handleListPrompts(ctx context.Context, request JSONRPCRequest) HTTPResponse {
+	prompts := s.registry.ListPrompts()
+	result := ListPromptsResult{
+		Prompts: prompts,
 	}
+
+	return NewSuccessHTTPResponse(request.ID, result, http.StatusOK)
+}
+
+func (s *Service) handleGetPrompt(ctx context.Context, request JSONRPCRequest) HTTPResponse {
+	var params GetPromptParams
+	if err := json.Unmarshal(request.Params, &params); err != nil {
+		return NewErrorHTTPResponse(request.ID, InvalidParams, "Invalid get prompt params", err, http.StatusOK)
+	}
+
+	handler, ok := s.registry.GetPrompt(params.Name)
+	if !ok {
+		return NewErrorHTTPResponse(request.ID, InvalidParams, fmt.Sprintf("Prompt not found: %s", params.Name), nil, http.StatusOK)
+	}
+
+	result, err := handler.GetPrompt(ctx, params.Arguments)
+	if err != nil {
+		s.logger.Error("Failed to get prompt", "prompt", params.Name, "error", err)
+		return NewErrorHTTPResponse(request.ID, InternalError, "Failed to get prompt", err.Error(), http.StatusOK)
+	}
+
+	return NewSuccessHTTPResponse(request.ID, result, http.StatusOK)
 }

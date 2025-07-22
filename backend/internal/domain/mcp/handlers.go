@@ -22,10 +22,19 @@ type ResourceHandler interface {
 	Read(ctx context.Context) (*ReadResourceResult, error)
 }
 
-// HandlerRegistry manages tool and resource handlers
+// PromptHandler defines the interface for prompt handlers
+type PromptHandler interface {
+	GetName() string
+	GetDescription() string
+	GetArguments() []PromptArgument
+	GetPrompt(ctx context.Context, arguments map[string]interface{}) (*GetPromptResult, error)
+}
+
+// HandlerRegistry manages tool, resource, and prompt handlers
 type HandlerRegistry struct {
 	tools     map[string]ToolHandler
 	resources map[string]ResourceHandler
+	prompts   map[string]PromptHandler
 }
 
 // NewHandlerRegistry creates a new handler registry
@@ -33,6 +42,7 @@ func NewHandlerRegistry() *HandlerRegistry {
 	return &HandlerRegistry{
 		tools:     make(map[string]ToolHandler),
 		resources: make(map[string]ResourceHandler),
+		prompts:   make(map[string]PromptHandler),
 	}
 }
 
@@ -83,4 +93,28 @@ func (r *HandlerRegistry) ListResources() []Resource {
 		})
 	}
 	return resources
+}
+
+// RegisterPrompt registers a prompt handler
+func (r *HandlerRegistry) RegisterPrompt(handler PromptHandler) {
+	r.prompts[handler.GetName()] = handler
+}
+
+// GetPrompt retrieves a prompt handler by name
+func (r *HandlerRegistry) GetPrompt(name string) (PromptHandler, bool) {
+	handler, ok := r.prompts[name]
+	return handler, ok
+}
+
+// ListPrompts returns all registered prompts
+func (r *HandlerRegistry) ListPrompts() []Prompt {
+	prompts := make([]Prompt, 0, len(r.prompts))
+	for _, handler := range r.prompts {
+		prompts = append(prompts, Prompt{
+			Name:        handler.GetName(),
+			Description: handler.GetDescription(),
+			Arguments:   handler.GetArguments(),
+		})
+	}
+	return prompts
 }
